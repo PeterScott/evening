@@ -34,7 +34,9 @@
   (store-chunk! [chunk] "Store chunk in Riak, returning non-dirty chunk"))
 
 ;;; Leaf nodes are relatively easy: we just store a byte array, along
-;;; with the name.
+;;; with the name and its width, in atoms. The width is prepended to
+;;; the byte array, in the format "width:bytes", where width is an
+;;; integer in ASCII format.
 
 (defrecord LeafNode
     [^String name                       ; Name of the node
@@ -73,12 +75,12 @@
 ;;; widths of the subsequences of to each child, for O(lg n) random
 ;;; lookup. We should also store the sum of those widths.
 ;;;
-;;; The children of a branch node are a vector of [child-chunk width
-;;; is-branch?] vectors. They are serialized to a colon-separated
-;;; series of "[BL]name" strings for database storage. The width is
-;;; read from the child nodes once they're loaded. Since a document is
-;;; either entirely loaded into memory or entirely not loaded (i.e. no
-;;; partial tree reads), this is okay.
+;;; The children of a branch node are a vector of child nodes. They
+;;; are serialized to a colon-separated series of "[BL]name" strings
+;;; for database storage. The width is read from the child nodes once
+;;; they're loaded. Since a document is either entirely loaded into
+;;; memory or entirely not loaded (i.e. no partial tree reads), this
+;;; is okay.
 
 (defrecord BranchNode
     [^String name                       ; Name of the node
@@ -94,9 +96,11 @@
        (filter #(< 0 (.length %)) (string/split #":" str))))
 
 (defn- unparse-branch-serialization
-  "Generate child spec string from a vector of [child-chunk width is-branch?] entries."
+  "Generate child spec string from a vector of child chunks"
   [children]
-  (apply str (interpose ":" (map #(str (if (% 2) "B" "L") (:name (% 0))) children))))
+  (apply str (interpose ":" (map #(str (if (= (type %) BranchNode) "B" "L")
+                                       (:name %))
+                                 children))))
 
 (defn- store-branch!
   "Store a branch node in Riak, along with any dirty child nodes.
@@ -105,28 +109,24 @@
   (if (:dirty? branch)
     (let [clean (assoc branch
                   :dirty? false
-                  :children (to-array (map store-chunk! (:children branch))))]
+                  :children (vec (map store-chunk! (:children branch))))]
       (kv-set! (:name branch)
-               (.getBytes (unparse-branch-serialization (:children branch)))
-               {:width (:width branch)})
+               (.getBytes (unparse-branch-serialization (:children branch))))
       clean)
     branch))
 
 (extend-type BranchNode
   RiakChunk (store-chunk! [this] (store-branch! this)))
 
-;; (defn- get-branch
-;;   "Recursively get a branch node from Riak, along with its children."
-;;   [name]
-;;   (when-let [data (kv-get name)]
-;;     (letfn [(is-leaf? [x] (= (first x) \L))
-;;             (get-name [x] (subs x 1))]
-;;       (let [child-names (read-json (String. data))
-;;             children (map #(if (is-leaf? %)
-;;                              (get-leaf (get-name %))
-;;                              (get-branch (get-name %)))
-;;                           child-names)]
-;;         (BranchNode. name (vec children) false)))))
+(defn- get-branch
+  "Recursively get a branch node from Riak, along with its children."
+  [name]
+  (when-let [data (kv-get name)]
+    (let [child-spec (parse-branch-serialization (String. (:value data)))
+          children (for [[child-name is-branch?] child-spec]
+                     (if is-branch? (get-branch child-name) (get-leaf child-name)))
+          width (reduce + (map :width children))]
+      (BranchNode. name (vec children) false width))))
 
 
 ;;; Debugging
@@ -135,10 +135,15 @@
 (def foo-leaf (LeafNode. "foo-leaf" (.getBytes "Foo is the word here") true 20))
 (def bar-leaf (LeafNode. "bar-leaf" (.getBytes "We are the bar flies") false 20))
 (def fubar-branch (BranchNode. "fubar-branch"
-                               [[foo-leaf 20 false] [bar-leaf 20 false]]
+                               [foo-leaf bar-leaf]
                                true 40))
 
 ;;; For getting rid of database debugging cruft
 (defn- delete-all-keys []
   (doseq [key (riak/list-keys *riak-connection* *default-bucket*)]
     (riak/delete *riak-connection* *default-bucket* key)))
+
+(defn- show-all-kv-pairs []
+  (for [key (riak/list-keys *riak-connection* *default-bucket*)]
+    [key (->> (riak/get *riak-connection* *default-bucket* key)
+              :value String.)]))
