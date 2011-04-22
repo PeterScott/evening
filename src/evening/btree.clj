@@ -1,8 +1,8 @@
 (ns evening.btree
-  (:use [clojure.contrib.json :only (json-str read-json)])
+  (:use [clojure.data.json :only (json-str read-json)])
   (:import (com.trifork.riak RiakClient RiakObject RiakLink
                              RequestMeta BucketProperties))
-  (:require [clojure.contrib.string :as string])
+  (:require [clojure.string :as string])
   (:require [clj-riak.client :as riak]))
 
 ;;;;;;;;;;;;;;;;;;;;;;; Riak server connection ;;;;;;;;;;;;;;;;;;;;;;;

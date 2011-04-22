@@ -1,6 +1,6 @@
 (ns evening.metadata
   (:import [redis.clients.jedis Jedis JedisPool])
-  (:use [clojure.contrib.json :only (json-str read-json)]))
+  (:use [clojure.data.json :only (json-str read-json)]))
 
 ;;;;;;;;;;;;;;;;;;;;; Attaching metadata to keys ;;;;;;;;;;;;;;;;;;;;;
 
