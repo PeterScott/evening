@@ -1,4 +1,5 @@
-(ns evening.atom)
+(ns evening.atom
+  (:import [java.nio ByteBuffer]))
 
 ;;; An atom is represented as two 32-bit numbers: the user id and the
 ;;; offset within that user's yarn. For compactness, this can be
@@ -41,18 +42,26 @@
                            :else entry))
                    (int-array [offset (+ offset 1)]))))))
 
-;;; Serialization goes to and from int[] arrays. FIXME: make it
-;;; serialize to and from byte arrays? Or is that not necessary?
+;;; Serialization goes to and from byte arrays.
 
-(defn serialize-id-range-sig [sig]
-  (int-array (apply concat
-                    (for [[user offset-range] (map vector (keys sig) (vals sig))]
-                      [user (nth offset-range 0) (nth offset-range 1)]))))
+(defn serialize-id-range-sig
+  "Serialize an id range signature to a byte[] array."
+  [sig]
+  (let [bb (ByteBuffer/allocate (* 12 (count sig)))]
+    (doseq [[user offset-range] (map vector (keys sig) (vals sig))]
+     (.putInt bb user)
+     (.putInt bb (nth offset-range 0))
+     (.putInt bb (nth offset-range 1)))
+    (.array bb)))
 
-(defn deserialize-id-range-sig [serialized]
-  (loop [sig {} i 0]
-    (if (>= i (count serialized))
-      sig
-      (recur (assoc sig (nth serialized i)
-                    (int-array [(nth serialized (+ i 1)) (nth serialized (+ i 2))]))
-             (+ i 3)))))
+(defn deserialize-id-range-sig
+  "Deserialize an id range signature from a byte[] array."
+  [serialized]
+  (let [bb (ByteBuffer/wrap serialized)
+        max-i (/ (count serialized) 4)]
+   (loop [sig {} i 0]
+     (if (>= i max-i)
+       sig
+       (let [x (.getInt bb) low (.getInt bb) high (.getInt bb)]
+         (recur (assoc sig x (int-array [low high]))
+                (+ i 3)))))))
