@@ -42,6 +42,17 @@
                            :else entry))
                    (int-array [offset (+ offset 1)]))))))
 
+(defn in-id-range-sig?
+  "Is an id in an id range signature? May have false positives, but no
+  false negatives."
+  [sig id]
+  (if-let [entry (sig (id-user id))]
+    (let [min-offset (nth entry 0)
+          max-offset (nth entry 1)
+          offset (id-offset id)]
+      (and (>= offset min-offset)
+           (< offset max-offset)))))
+
 ;;; Serialization goes to and from byte arrays.
 
 (defn serialize-id-range-sig
