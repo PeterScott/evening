@@ -1,5 +1,5 @@
 (ns evening.atom
-  (:import [java.nio ByteBuffer]))
+  (:import [org.msgpack Packer Unpacker]))
 
 ;;; An atom is represented as two 32-bit numbers: the user id and the
 ;;; offset within that user's yarn. For compactness, this can be
@@ -55,28 +55,28 @@
 
 ;;; Serialization goes to and from byte arrays.
 
-(defn serialize-id-range-sig
-  "Serialize an id range signature to a byte[] array."
+(defn pack-id-range-sig
+  "Pack an id range signature into a byte[] array."
   [sig]
-  (let [bb (ByteBuffer/allocate (* 12 (count sig)))]
-    (doseq [[user offset-range] (map vector (keys sig) (vals sig))]
-     (.putInt bb user)
-     (.putInt bb (nth offset-range 0))
-     (.putInt bb (nth offset-range 1)))
-    (.array bb)))
+  (let [ba (java.io.ByteArrayOutputStream.)
+        p (Packer. ba)]
+    (.pack p (int (count sig)))
+    (doseq [[user [high low]] (seq sig)]
+      (.pack p (int user))
+      (.pack p (int high))
+      (.pack p (int low)))
+    (.toByteArray ba)))
 
-(defn deserialize-id-range-sig
-  "Deserialize an id range signature from a byte[] array."
-  [serialized]
-  (let [bb (ByteBuffer/wrap serialized)
-        max-i (/ (count serialized) 4)]
-   (loop [sig {} i 0]
-     (if (>= i max-i)
-       sig
-       (let [x (.getInt bb) low (.getInt bb) high (.getInt bb)]
-         (recur (assoc sig x (int-array [low high]))
-                (+ i 3)))))))
-
+(defn unpack-id-range-sig
+  "Unpack an id range signature from a byte[] array."
+  [^bytes packed]
+  (let [up (Unpacker. (java.io.ByteArrayInputStream. packed))
+        len (.unpackInt up)
+        sig (transient {})]
+    (dotimes [_ len]
+      (let [user (.unpackInt up) high (.unpackInt up) low (.unpackInt up)]
+        (assoc! sig user [high low])))
+    (persistent! sig)))
 
 ;;; Atom sequences come in two types: split and single. A split atom
 ;;; sequence consists of two arrays: a long[] array of ids, and an

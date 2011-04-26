@@ -42,11 +42,9 @@
       (is (in-id-range-sig? sig2 (pack-id 108 58)))
       (is (not (in-id-range-sig? sig2 (pack-id 108 50)))))
     (testing "id range signature serdes"
-      (is (sig= sig1 (deserialize-id-range-sig (serialize-id-range-sig sig1))))
-      (is (sig= sig2 (deserialize-id-range-sig (serialize-id-range-sig sig2))))
-      (is (= 24 (count (serialize-id-range-sig sig1))))
-      (is (= 36 (count (serialize-id-range-sig sig2))))
-      (is (= (type (serialize-id-range-sig sig1))
+      (is (sig= sig1 (unpack-id-range-sig (pack-id-range-sig sig1))))
+      (is (sig= sig2 (unpack-id-range-sig (pack-id-range-sig sig2))))
+      (is (= (type (pack-id-range-sig sig1))
              (type (byte-array 0)))))))
 
 (deftest atom-seqs
