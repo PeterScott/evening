@@ -58,7 +58,9 @@
       (is (= (unpack-id (split-atom-seq-nth-pred aseq 0)) [3 4]))
       (is (= (unpack-id (split-atom-seq-nth-pred aseq 1)) [1 8]))
       (is (= (split-atom-seq-nth-char aseq 0) \a))
-      (is (= (split-atom-seq-nth-char aseq 1) \d))))
+      (is (= (split-atom-seq-nth-char aseq 1) \d))
+      (is (= (split-atom-seq ids aseq) '([1 2 3 4 \a] [2 7 1 8 \d])))
+      (is (nil? (split-atom-seq (long-array []) (int-array []))))))
   (testing "single atom seqs"
     (let [testseq (int-array [1 2 3 4 97 2 7 1 8 100])]
       (is (= (unpack-id (single-atom-seq-nth-id testseq 0)) [1 2]))
@@ -66,4 +68,6 @@
       (is (= (unpack-id (single-atom-seq-nth-pred testseq 0)) [3 4]))
       (is (= (unpack-id (single-atom-seq-nth-pred testseq 1)) [1 8]))
       (is (= (single-atom-seq-nth-char testseq 0) \a))
-      (is (= (single-atom-seq-nth-char testseq 1) \d)))))
+      (is (= (single-atom-seq-nth-char testseq 1) \d))
+      (is (= (single-atom-seq testseq) '([1 2 3 4 \a] [2 7 1 8 \d])))
+      (is (nil? (single-atom-seq (int-array [])))))))

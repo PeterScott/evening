@@ -99,6 +99,20 @@
 (defn split-atom-seq-nth-char [^ints aseq ^long n]
   (char (nth aseq (+ (* n 3) 2))))
 
+(defn split-atom-seq
+  "Return a lazy seq of [yarn offset pred-yarn pred-offset char] atom
+  entries from a split atom seq."
+  [^longs idseq ^ints aseq]
+  (letfn [(iter [i j] (if (< i (alength idseq))
+                        (let [id (nth idseq i)
+                              yarn (id-user id)
+                              offset (id-offset id)]
+                          (cons [yarn offset 
+                                 (nth aseq j) (nth aseq (+ j 1))
+                                 (char (nth aseq (+ j 2)))]
+                                (iter (+ i 1) (+ j 3))))))]
+    (iter 0 0)))
+
 
 (defn single-atom-seq-nth-id [^ints aseq ^long n]
   (let [base (* 5 n)]
@@ -111,4 +125,13 @@
 (defn single-atom-seq-nth-char [^ints aseq ^long n]
   (char (nth aseq (+ (* n 5) 4))))
 
-
+(defn single-atom-seq
+  "Return a lazy seq of [yarn offset pred-yarn pred-offset char] atom
+  entries from a single atom seq."
+  [^ints aseq]
+  (letfn [(iter [i] (if (< i (alength aseq))
+                      (cons [(nth aseq i) (nth aseq (+ i 1))
+                             (nth aseq (+ i 2)) (nth aseq (+ i 3))
+                             (char (nth aseq (+ i 4)))]
+                            (iter (+ i 5)))))]
+    (iter 0)))
