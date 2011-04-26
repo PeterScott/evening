@@ -76,3 +76,27 @@
        (let [x (.getInt bb) low (.getInt bb) high (.getInt bb)]
          (recur (assoc sig x (int-array [low high]))
                 (+ i 3)))))))
+
+
+;;; Atom sequences come in two types: split and single. A split atom
+;;; sequence consists of two arrays: a long[] array of ids, and an
+;;; int[] array of (pred-yarn, pred-offset, char-code) triples. A
+;;; single atom sequence is a simple int[] array of (yarn, offset,
+;;; pred-yarn, pred-offset, char-code) 5-tuples. The former are
+;;; optimized for linear scanning for a given id; the latter are
+;;; optimized for being simple to work with, and easy to serialize.
+;;;
+;;; Here we provide accessor functions for the nth id, predecessor,
+;;; and character of each type of sequence.
+
+(defn split-atom-seq-nth-id [^longs idseq ^long n]
+  (nth idseq n))
+
+(defn split-atom-seq-nth-pred [^ints aseq ^long n]
+  (let [base (* 3 n)]
+    (pack-id (nth aseq base) (nth aseq (+ base 1)))))
+
+(defn split-atom-seq-nth-char [^ints aseq ^long n]
+  (char (nth aseq (+ (* n 3) 2))))
+
+;;; FIXME: write equivalents of these for single seqs
