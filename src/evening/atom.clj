@@ -99,4 +99,16 @@
 (defn split-atom-seq-nth-char [^ints aseq ^long n]
   (char (nth aseq (+ (* n 3) 2))))
 
-;;; FIXME: write equivalents of these for single seqs
+
+(defn single-atom-seq-nth-id [^ints aseq ^long n]
+  (let [base (* 5 n)]
+    (pack-id (nth aseq base) (nth aseq (+ base 1)))))
+
+(defn single-atom-seq-nth-pred [^ints aseq ^long n]
+  (let [base (* 5 n)]
+    (pack-id (nth aseq (+ base 2)) (nth aseq (+ base 3)))))
+
+(defn single-atom-seq-nth-char [^ints aseq ^long n]
+  (char (nth aseq (+ (* n 5) 4))))
+
+
