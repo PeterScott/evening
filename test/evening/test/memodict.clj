@@ -29,3 +29,9 @@
                (pack-id 2 1) (quickweft "a3b1")}))
     (memodict-add! md (pack-id 2 2) (quickweft "a3b2"))
     (is (= md foomemo))))
+
+(deftest test-pull
+  (is (= (pull foomemo (pack-id 1 3) 0) {1 3}))
+  (is (= (pull foomemo (pack-id 1 6) 0) {1 6, 2 2}))
+  (is (= (pull foomemo (pack-id 1 6) (pack-id 5 6)) {1 6, 2 2, 5 6}))
+  (is (= (pull foomemo (pack-id 1 2) (pack-id 2 1)) {1 3, 2 1})))

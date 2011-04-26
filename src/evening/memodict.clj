@@ -45,6 +45,17 @@
      :else (sorted-map (id-user id) (id-offset id)))
     (sorted-map (id-user id) (id-offset id))))
 
+(defn pull
+  "Pull the awareness weft of a given atom id, assuming a properly
+   filled-out memoization dict. If the predecessor id is 0, it will be
+   ignored."
+  [^TreeMap memodict ^long id ^long pred]
+  (let [weft (weft-extend (memodict-get memodict id)
+                          (id-user id) (id-offset id))]
+    (if (== pred 0)
+      weft
+      (weft-merge weft (memodict-get memodict pred)))))
+
 ;;; Example memodict from Grishchenko's paper
 ; (def foomemo
 ;   (TreeMap. {(pack-id 1 1) (quickweft "a1")
