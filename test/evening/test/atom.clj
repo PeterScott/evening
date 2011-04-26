@@ -48,3 +48,22 @@
       (is (= 36 (count (serialize-id-range-sig sig2))))
       (is (= (type (serialize-id-range-sig sig1))
              (type (byte-array 0)))))))
+
+(deftest atom-seqs
+  (testing "split atom seqs"
+    (let [ids (long-array [(pack-id 1 2) (pack-id 2 7)])
+          aseq (int-array [3 4 97 1 8 100])]
+      (is (= (unpack-id (split-atom-seq-nth-id ids 0)) [1 2]))
+      (is (= (unpack-id (split-atom-seq-nth-id ids 1)) [2 7]))
+      (is (= (unpack-id (split-atom-seq-nth-pred aseq 0)) [3 4]))
+      (is (= (unpack-id (split-atom-seq-nth-pred aseq 1)) [1 8]))
+      (is (= (split-atom-seq-nth-char aseq 0) \a))
+      (is (= (split-atom-seq-nth-char aseq 1) \d))))
+  (testing "single atom seqs"
+    (let [testseq (int-array [1 2 3 4 97 2 7 1 8 100])]
+      (is (= (unpack-id (single-atom-seq-nth-id testseq 0)) [1 2]))
+      (is (= (unpack-id (single-atom-seq-nth-id testseq 1)) [2 7]))
+      (is (= (unpack-id (single-atom-seq-nth-pred testseq 0)) [3 4]))
+      (is (= (unpack-id (single-atom-seq-nth-pred testseq 1)) [1 8]))
+      (is (= (single-atom-seq-nth-char testseq 0) \a))
+      (is (= (single-atom-seq-nth-char testseq 1) \d)))))
