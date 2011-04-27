@@ -1,4 +1,5 @@
 (ns evening.atom
+  (:use evening.serdes)
   (:import [org.msgpack Packer Unpacker]))
 
 ;;; An atom is represented as two 32-bit numbers: the user id and the
@@ -56,27 +57,24 @@
 ;;; Serialization goes to and from byte arrays.
 
 (defn pack-id-range-sig
-  "Pack an id range signature into a byte[] array."
-  [sig]
-  (let [ba (java.io.ByteArrayOutputStream.)
-        p (Packer. ba)]
-    (.pack p (int (count sig)))
-    (doseq [[user [high low]] (seq sig)]
-      (.pack p (int user))
-      (.pack p (int high))
-      (.pack p (int low)))
-    (.toByteArray ba)))
+  "Pack an id range signature with a Packer."
+  [sig ^Packer packer]
+  (.pack packer (int (count sig)))
+  (doseq [[user [high low]] (seq sig)]
+    (.pack packer (int user))
+    (.pack packer (int high))
+    (.pack packer (int low))))
 
 (defn unpack-id-range-sig
-  "Unpack an id range signature from a byte[] array."
-  [^bytes packed]
-  (let [up (Unpacker. (java.io.ByteArrayInputStream. packed))
-        len (.unpackInt up)
+  "Unpack an id range signature from an Unpacker."
+  [^Unpacker unpacker]
+  (let [len (.unpackInt unpacker)
         sig (transient {})]
     (dotimes [_ len]
-      (let [user (.unpackInt up) high (.unpackInt up) low (.unpackInt up)]
+      (let [user (.unpackInt unpacker) high (.unpackInt unpacker) low (.unpackInt unpacker)]
         (assoc! sig user [high low])))
     (persistent! sig)))
+
 
 ;;; Atom sequences come in two types: split and single. A split atom
 ;;; sequence consists of two arrays: a long[] array of ids, and an
