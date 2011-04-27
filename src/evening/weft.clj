@@ -1,5 +1,6 @@
 (ns evening.weft
-  (:use evening.atom))
+  (:use [evening atom serdes])
+  (:import [org.msgpack Packer Unpacker]))
 
 ;;; A weft is a map of user ids to the tops of their yarns. For
 ;;; example, the weft a5b2 could be written {1 5, 2 2}, where a's id is
@@ -48,3 +49,19 @@
 (defn quickweft-print [weft]
   (apply str
          (mapcat (fn [[yarn offset]] [(char (+ yarn 96)) offset]) (seq weft))))
+
+;;; Serialization
+
+(defn pack-weft [weft ^Packer packer]
+  (.packMap packer (count weft))
+  (doseq [[key val] (seq weft)]
+    (.pack packer (int key))
+    (.pack packer (int val))))
+
+(defn unpack-weft [^Unpacker unpacker]
+  (let [len (.unpackMap unpacker)
+        weft (transient {})]
+    (dotimes [_ len]
+      (let [key (.unpackInt unpacker) val (.unpackInt unpacker)]
+        (assoc! weft key val)))
+    (persistent! weft)))
