@@ -1,5 +1,5 @@
 (ns evening.test.atom
-  (:use [evening.atom] :reload)
+  (:use [evening atom serdes] :reload)
   (:use [clojure.test]))
 
 ;;; Utility functions
@@ -42,10 +42,12 @@
       (is (in-id-range-sig? sig2 (pack-id 108 58)))
       (is (not (in-id-range-sig? sig2 (pack-id 108 50)))))
     (testing "id range signature serdes"
-      (is (sig= sig1 (unpack-id-range-sig (pack-id-range-sig sig1))))
-      (is (sig= sig2 (unpack-id-range-sig (pack-id-range-sig sig2))))
-      (is (= (type (pack-id-range-sig sig1))
-             (type (byte-array 0)))))))
+      (is (sig= sig1
+                (with-unpack-from-bytes [up (with-pack-to-bytes p (pack-id-range-sig sig1 p))]
+                  (unpack-id-range-sig up))))
+      (is (sig= sig2
+                (with-unpack-from-bytes [up (with-pack-to-bytes p (pack-id-range-sig sig2 p))]
+                  (unpack-id-range-sig up)))))))
 
 (deftest atom-seqs
   (testing "split atom seqs"
