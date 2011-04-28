@@ -1,7 +1,7 @@
 (ns evening.memodict
-  (:use evening.atom)
-  (:use evening.weft)
-  (:import [java.util TreeMap SortedMap NoSuchElementException]))
+  (:use [evening atom weft])
+  (:import [java.util TreeMap SortedMap NoSuchElementException])
+  (:import [org.msgpack Packer Unpacker]))
 
 ;;; An id-to-weft memoization dict maps the ids of atoms whose
 ;;; predecessors are in another yarn to their awareness wefts. As long
@@ -55,6 +55,24 @@
     (if (== pred 0)
       weft
       (weft-merge weft (memodict-get memodict pred)))))
+
+(defn pack-memodict [^TreeMap memodict ^Packer packer]
+  (.packMap packer (.size memodict))
+  (doseq [entry memodict] ; ^java.util.Map.Entry
+    (let [id (long (.getKey entry))
+          yarn (id-user id) offset (id-offset id)]
+      (.pack packer (int yarn))
+      (.pack packer (int offset)))
+    (pack-weft (.getValue entry) packer)))
+
+(defn unpack-memodict [^Unpacker unpacker]
+  (let [len (.unpackMap unpacker)
+        memodict (TreeMap.)]
+    (dotimes [_ len]
+      (let [yarn (.unpackInt unpacker) offset (.unpackInt unpacker)]
+        (.put memodict (pack-id yarn offset)
+              (unpack-weft unpacker))))
+    memodict))
 
 ;;; Example memodict from Grishchenko's paper
 ; (def foomemo

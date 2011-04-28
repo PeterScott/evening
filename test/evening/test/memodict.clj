@@ -1,6 +1,6 @@
 (ns evening.test.memodict
   (:use [clojure.test])
-  (:use [evening memodict weft atom]))
+  (:use [evening memodict weft atom serdes]))
 
 ;;; Example memodict from Grishchenko's paper
 (def foomemo
@@ -35,3 +35,7 @@
   (is (= (pull foomemo (pack-id 1 6) 0) {1 6, 2 2}))
   (is (= (pull foomemo (pack-id 1 6) (pack-id 5 6)) {1 6, 2 2, 5 6}))
   (is (= (pull foomemo (pack-id 1 2) (pack-id 2 1)) {1 3, 2 1})))
+
+(deftest test-serdes
+  (is (= foomemo (pack-then-unpack pack-memodict unpack-memodict foomemo)))
+  (is (= (new-memodict) (pack-then-unpack pack-memodict unpack-memodict (new-memodict)))))
