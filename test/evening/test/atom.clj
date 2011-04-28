@@ -42,12 +42,8 @@
       (is (in-id-range-sig? sig2 (pack-id 108 58)))
       (is (not (in-id-range-sig? sig2 (pack-id 108 50)))))
     (testing "id range signature serdes"
-      (is (sig= sig1
-                (with-unpack-from-bytes [up (with-pack-to-bytes p (pack-id-range-sig sig1 p))]
-                  (unpack-id-range-sig up))))
-      (is (sig= sig2
-                (with-unpack-from-bytes [up (with-pack-to-bytes p (pack-id-range-sig sig2 p))]
-                  (unpack-id-range-sig up)))))))
+      (is (sig= sig1 (pack-then-unpack pack-id-range-sig unpack-id-range-sig sig1)))
+      (is (sig= sig2 (pack-then-unpack pack-id-range-sig unpack-id-range-sig sig2))))))
 
 (deftest atom-seqs
   (testing "split atom seqs"

@@ -18,3 +18,10 @@
   [[unpacker bytes] & body]
   `(let [~unpacker (Unpacker. (java.io.ByteArrayInputStream. ~bytes))]
      ~@body))
+
+(defn pack-then-unpack
+  "Pack x with pack-fun, then unpack with unpack-fun. For testing."
+  [pack-fun unpack-fun x]
+  (let [packed (with-pack-to-bytes p (pack-fun x p))]
+    (with-unpack-from-bytes [up packed]
+      (unpack-fun up))))
